@@ -1,9 +1,16 @@
 package com.hibernate.EmployPayroll;
 
+import java.sql.Date;
+import java.time.LocalDate;
+import java.util.Calendar;
 import java.util.List;
 
+import org.hibernate.Criteria;
+import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.criterion.Restrictions;
 
 public class DAO {
 	SessionFactory sessionFactory;
@@ -62,5 +69,81 @@ public class DAO {
 		session.close();
 		
 		return "Employee added.";
+	}
+	
+	public Date convertDate(java.util.Date date ) {
+		return new Date(date.getTime());
+	}
+	
+	public int noOfDays(Date startDate, Date endDate) {
+		return (int)(endDate.getTime() - startDate.getTime()) / (1000 * 24 * 60 * 60) + 1;
+	}
+	
+	public Employ searchById(int empId) {
+  		Session session = SessionHelper.getConnection().openSession(); 
+  		Criteria cr = session.createCriteria(Employ.class);
+  		cr.add(Restrictions.eq("empno", empId));
+  		List<Employ> empList = cr.list();
+  		return empList.get(0);
+	}
+	
+	public Leave searchId(int empId) {
+  		Session session = SessionHelper.getConnection().openSession(); 
+  		Criteria cr = session.createCriteria(Leave.class);
+  		cr.add(Restrictions.eq("empno", empId));
+  		List<Leave> empList = cr.list();
+  		return empList.get(0);
+	}
+	
+	public double lossOfPay(int empno, int month) {
+		Session session = SessionHelper.getConnection().openSession(); 
+		
+		Leave leave = new Leave();
+		Employ employ = searchById(empno);
+
+		double salary =	employ.getSalary();
+		double salaryOfOneDay = salary / 30.46, lossOfPay = 0; long lossOfPayDays;
+  		
+		Query query=session.createQuery("select sum(noOfDays) from Leave where empno=:empno AND (MONTH(leaveStartDate)=:month AND MONTH(leaveEndDate)=:month)").setParameter("empno", empno).setParameter("month", month);
+
+  		List<Long> count = query.list();
+  		
+  		long longNOD = (Long)count.get(0);
+  		
+		if(longNOD >= 3) {
+			lossOfPayDays = longNOD - 3;
+			lossOfPay = lossOfPayDays * salaryOfOneDay;
+		}
+		
+		leave=searchId(empno);
+		leave.setLossOfPay(lossOfPay);
+		session.saveOrUpdate(leave);
+		session.beginTransaction().commit();
+		
+		return lossOfPay;
+	}
+	
+	public String addLeave(Leave leave) {
+		Session session = SessionHelper.getConnection().openSession();
+		
+		int noOfDays = noOfDays(leave.getStartDate(), leave.getEndDate());
+		leave.setNoOfDays(noOfDays);
+		
+		session.save(leave);
+		session.beginTransaction().commit();
+		session.close();
+		
+		Employ employ = searchById(leave.getEmpno());
+		if (noOfDays <= 3) {
+			employ.setLeaveAvailable(employ.getLeaveAvailable() - noOfDays);
+		}else {
+			employ.setLeaveAvailable(employ.getLeaveAvailable() - 3);
+		}
+		
+		session = SessionHelper.getConnection().openSession();
+		session.update(employ);
+		session.close();
+		
+		return "Your leave request added.";
 	}
 }

@@ -10,5 +10,6 @@
         <property name="hibernate.connection.username">root</property>
         <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
         <mapping class="com.hibernate.EmployPayroll.Employ"/>
+        <mapping class="com.hibernate.EmployPayroll.Leave"/>
     </session-factory>
 </hibernate-configuration>
