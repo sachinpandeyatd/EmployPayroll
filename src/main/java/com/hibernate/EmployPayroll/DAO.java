@@ -123,7 +123,24 @@ public class DAO {
 		return lossOfPay;
 	}
 	
+	public boolean areDatesOverlapping(Date startDate, Date endDate) {
+		boolean areDatesOverlapping = false;
+		
+		Session session = SessionHelper.getConnection().openSession(); 
+		int count = session.createQuery("from Leave where empno = 1 AND (LeaveStartDate between :startDate AND :endDate) OR (LeaveEndDate between :startDate AND :endDate)").setParameter("startDate", startDate).setParameter("endDate", endDate).list().size();
+		
+		if (count != 0) {
+			areDatesOverlapping = true;
+		}
+		
+		return areDatesOverlapping;
+	}
+	
 	public String addLeave(Leave leave) {
+		if (areDatesOverlapping(leave.getStartDate(), leave.getEndDate())) {
+			return "Dates are overlapping, please check your dates and try again.";
+		}
+		
 		Session session = SessionHelper.getConnection().openSession();
 		
 		int noOfDays = noOfDays(leave.getStartDate(), leave.getEndDate());
