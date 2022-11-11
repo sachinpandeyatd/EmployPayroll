@@ -1,10 +1,7 @@
 package com.hibernate.EmployPayroll;
 
-import java.sql.Date;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.util.Calendar;
 
 public class Test {
 	public static void main(String[] args) throws ParseException {
@@ -29,6 +26,6 @@ public class Test {
 	    java.util.Date et = sdf.parse(e);
 	    java.sql.Date ed = new java.sql.Date(et.getTime());
 		
-		System.out.println(new DAO().areDatesOverlapping(sd, ed));
+		System.out.println(new DAO().areDatesOverlapping(sd, ed, 1));
 	}
 }

@@ -1,15 +1,12 @@
 package com.hibernate.EmployPayroll;
 
 import java.sql.Date;
-import java.time.LocalDate;
-import java.util.Calendar;
 import java.util.List;
 
 import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
 
 public class DAO {
@@ -79,6 +76,7 @@ public class DAO {
 		return (int)(endDate.getTime() - startDate.getTime()) / (1000 * 24 * 60 * 60) + 1;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public Employ searchById(int empId) {
   		Session session = SessionHelper.getConnection().openSession(); 
   		Criteria cr = session.createCriteria(Employ.class);
@@ -91,10 +89,12 @@ public class DAO {
   		Session session = SessionHelper.getConnection().openSession(); 
   		Criteria cr = session.createCriteria(Leave.class);
   		cr.add(Restrictions.eq("empno", empId));
-  		List<Leave> empList = cr.list();
+  		@SuppressWarnings("unchecked")
+		List<Leave> empList = cr.list();
   		return empList.get(0);
 	}
 	
+	@SuppressWarnings("unchecked")
 	public double lossOfPay(int empno, int month) {
 		Session session = SessionHelper.getConnection().openSession(); 
 		
@@ -123,11 +123,11 @@ public class DAO {
 		return lossOfPay;
 	}
 	
-	public boolean areDatesOverlapping(Date startDate, Date endDate) {
+	public boolean areDatesOverlapping(Date startDate, Date endDate, int empno) {
 		boolean areDatesOverlapping = false;
 		
 		Session session = SessionHelper.getConnection().openSession(); 
-		int count = session.createQuery("from Leave where empno = 1 AND (LeaveStartDate between :startDate AND :endDate) OR (LeaveEndDate between :startDate AND :endDate)").setParameter("startDate", startDate).setParameter("endDate", endDate).list().size();
+		int count = session.createQuery("from Leave where empno = :empno AND (leaveStartdate <= :startDate AND LeaveEndDate >= :startDate) or (leaveStartDate <= :endDate AND LeaveEndDate >= :endDate)").setParameter("startDate", startDate).setParameter("endDate", endDate).setParameter("empno", empno).list().size();
 		
 		if (count != 0) {
 			areDatesOverlapping = true;
@@ -137,7 +137,7 @@ public class DAO {
 	}
 	
 	public String addLeave(Leave leave) {
-		if (areDatesOverlapping(leave.getStartDate(), leave.getEndDate())) {
+		if (areDatesOverlapping(leave.getStartDate(), leave.getEndDate(), leave.getEmpno())) {
 			return "Dates are overlapping, please check your dates and try again.";
 		}
 		
